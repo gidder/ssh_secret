@@ -78,15 +78,16 @@ class SecretMgmt:
             self.file.write(f"{self.cookie} {self.k}{os.linesep}")
             self.file.flush()
 
-    def _process_reply_dh(self, instance, _pkttype, _pktid, packet):
-        instance._process_reply(_pkttype, _pktid, packet)
-        k = instance._compute_client_shared()
-
-        self.k = hex(k)[2:]
+    # def _process_reply_dh(self, instance, _pkttype, _pktid, packet):
+    #     instance._process_reply(_pkttype, _pktid, packet)
+    #     k = instance._compute_client_shared()
+    #     k = int.from_bytes(instance._priv._priv_key._raw_private_bytes(), 'big')
+    #
+    #     self.k = hex(k)[2:]
 
     def _process_reply_ecdh(self, instance, _pkttype, _pktid, packet):
         instance._process_reply(_pkttype, _pktid, packet)
-        k = instance._priv.get_shared(instance._server_pub)
+        k = int.from_bytes(instance._priv._priv_key._raw_private_bytes(), 'big')
 
         self.k = hex(k)[2:]
 
@@ -96,12 +97,12 @@ def async_secret(file_path='ssh.log'):
     secret_mgmt = SecretMgmt(file_path)
 
     _send_kexinit_orig = asyncssh.connection.SSHConnection._send_kexinit
-    process_reply_orig = asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY]
+    # process_reply_orig = asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY]
     # process_reply_ecdh_orig = asyncssh.kex_ecdh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY]
     process_reply_ecdh_orig = asyncssh.kex_dh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY]
 
     asyncssh.connection.SSHConnection._send_kexinit = lambda self: _send_kexinit(self, secret_mgmt)
-    asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY] = secret_mgmt._process_reply_dh
+    # asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY] = secret_mgmt._process_reply_dh
     # asyncssh.kex_ecdh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY] = secret_mgmt._process_reply_ecdh
     asyncssh.kex_dh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY] = secret_mgmt._process_reply_ecdh
 
@@ -109,7 +110,7 @@ def async_secret(file_path='ssh.log'):
         yield
 
     asyncssh.connection.SSHConnection._send_kexinit = _send_kexinit_orig
-    asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY] = process_reply_orig
+    # asyncssh.kex_dh._KexDH._packet_handlers[MSG_KEXDH_REPLY] = process_reply_orig
     # asyncssh.kex_ecdh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY] = process_reply_ecdh_orig
     asyncssh.kex_dh._KexECDH._packet_handlers[MSG_KEX_ECDH_REPLY] = process_reply_ecdh_orig
 
